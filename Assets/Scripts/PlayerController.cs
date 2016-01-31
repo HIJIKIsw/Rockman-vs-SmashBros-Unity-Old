@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
 
 	private Vector3 MovingDistance;             // 現在のフレームでの移動量
 
+	private BoxCollider2D BoxCollider2D;        // BoxCollider2D コンポーネント
 	private Animator Animator;                  // Animator コンポーネント
 	private SpriteRenderer SpriteRenderer;      // SpriteRenderer コンポーネント
 
@@ -18,6 +19,7 @@ public class PlayerController : MonoBehaviour
 		WalkSpeedMax = 1.25f;
 		MovingDistance = new Vector3(0, 0);
 
+		BoxCollider2D = GetComponent<BoxCollider2D>();
 		Animator = GetComponent<Animator>();
 		SpriteRenderer = GetComponent<SpriteRenderer>();
 	}
@@ -61,5 +63,16 @@ public class PlayerController : MonoBehaviour
 	void Move()
 	{
 		transform.position += MovingDistance;
+
 	}
+
+	void OnCollisionStay2D(Collision2D coll)
+	{
+		GameObject obj = coll.gameObject;
+		if (obj.tag == "Enemy") {
+			Vector3 pos = new Vector3(obj.transform.position.x, obj.transform.position.y+1f);
+			obj.transform.position = pos;
+		}
+	}
+
 }
