@@ -4,7 +4,7 @@ using System.Collections;
 public class PlayerController : MonoBehaviour
 {
 	private float WalkSpeed;                    // 左右キーによる移動の加速度
-	private float WalkSpeedMax;					// 左右キーによる移動の最大速度
+	private float WalkSpeedMax;                 // 左右キーによる移動の最大速度
 
 	private Vector3 MovingDistance;             // 現在のフレームでの移動量
 
@@ -30,6 +30,9 @@ public class PlayerController : MonoBehaviour
 		// 左右移動
 		Walk();
 
+		// 移動先との接触判定
+		MoveCheck();
+
 		// 移動量反映
 		Move();
 	}
@@ -42,13 +45,13 @@ public class PlayerController : MonoBehaviour
 		{
 			SpriteRenderer.flipX = true;
 			Animator.SetBool("IsWalk", true);
-			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-1.25f, MovingDistance.x -= WalkSpeed));
+			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-WalkSpeedMax, MovingDistance.x -= WalkSpeed));
 		}
 		else if (Input.GetKey(KeyCode.RightArrow))
 		{
 			SpriteRenderer.flipX = false;
 			Animator.SetBool("IsWalk", true);
-			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-1.25f, MovingDistance.x += WalkSpeed));
+			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-WalkSpeedMax, MovingDistance.x += WalkSpeed));
 		}
 
 		// 左右のキーが入力されていない場合
@@ -59,20 +62,33 @@ public class PlayerController : MonoBehaviour
 		}
 	}
 
+	// 移動先との接触判定
+	void MoveCheck()
+	{
+		// 左右の判定
+		if (MovingDistance.x != 0)
+		{
+			bool IsGoingRight = MovingDistance.x > 0;
+			Vector2 origin = transform.position;
+			Vector2 rayDirection = IsGoingRight ? Vector2.right : Vector2.left;
+			float rayDistance = Mathf.Abs(MovingDistance.x);
+			int layerMask = LayerMask.GetMask(new string[] { "Platform" });
+
+			origin.x += rayDirection.x * (BoxCollider2D.size.x / 2);
+
+			RaycastHit2D RaycastHit = Physics2D.Raycast(origin, rayDirection, rayDistance, layerMask);
+			Debug.DrawRay(origin, rayDirection * rayDistance, Color.red);
+			if (RaycastHit)
+			{
+				MovingDistance.x = RaycastHit.point.x - origin.x;
+			}
+		}
+	}
+
 	// 移動量反映
 	void Move()
 	{
 		transform.position += MovingDistance;
-
-	}
-
-	void OnCollisionStay2D(Collision2D coll)
-	{
-		GameObject obj = coll.gameObject;
-		if (obj.tag == "Enemy") {
-			Vector3 pos = new Vector3(obj.transform.position.x, obj.transform.position.y+1f);
-			obj.transform.position = pos;
-		}
 	}
 
 }

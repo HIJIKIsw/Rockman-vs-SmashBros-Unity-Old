@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!--Tiled2Unity generated xml data-->
 <!--Do not modify by hand-->
-<!--Last exported: 2016/01/31 20:29:24-->
+<!--Last exported: 2016/02/01 1:11:02-->
 <Tiled2Unity version="1.0.2.4">
   <AssignMaterial mesh="mesh_0001" material="link_stage_mapchip" alphaColorKey="#009700" />
   <Prefab name="testMap" numTilesWide="32" numTilesHigh="30" tileWidth="16" tileHeight="16" exportScale="1" mapWidthInPixels="512" mapHeightInPixels="480">
-    <GameObject name="BackGround" x="0" y="0">
+    <GameObject name="BackGround" x="0" y="0" layer="Platform">
       <GameObject name="link_stage_mapchip" copy="mesh_0001" sortingLayerName="Background" sortingOrder="0" opacity="1" />
       <GameObject name="Collision">
         <PolygonCollider2D>
