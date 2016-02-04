@@ -35,6 +35,15 @@ public class PlayerController : MonoBehaviour
 
 		// 移動量反映
 		BMController.Calc(true, true);
+
+		if (BMController.IsAir)
+		{
+			Animator.SetBool("IsJumping", true);
+		}
+		else
+		{
+			Animator.SetBool("IsJumping", false);
+		}
 	}
 
 	// 入力受付
@@ -51,13 +60,13 @@ public class PlayerController : MonoBehaviour
 		if (Direction != 0)
 		{
 			SpriteRenderer.flipX = Direction < 0;
-			Animator.SetBool("IsWalk", true);
+			Animator.SetBool("IsWalking", true);
 			BMController.MoveDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-WalkSpeedMax, BMController.MoveDistance.x += WalkSpeed * Direction));
 		}
 		// 左右キーが入力されていない場合に止める
 		else
 		{
-			Animator.SetBool("IsWalk", false);
+			Animator.SetBool("IsWalking", false);
 			BMController.MoveDistance.x = 0;
 		}
 

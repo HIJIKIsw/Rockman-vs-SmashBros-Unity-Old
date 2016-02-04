@@ -6,6 +6,7 @@ using System;
 public class BasicMovementController : MonoBehaviour
 {
 	BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
+	Rigidbody2D Rigidbody2D;                    // Rigidbody2D コンポーネント
 
 	private struct ColliderVertex               // 当たり判定の頂点 構造体
 	{
@@ -35,13 +36,9 @@ public class BasicMovementController : MonoBehaviour
 	// コンストラクタ
 	void Start()
 	{
+		Rigidbody2D = GetComponent<Rigidbody2D>();
 		BoxCollider2D = GetComponent<BoxCollider2D>();
 		SetPlatformLayerMask(new string[] { "Platform" });
-	}
-
-	// 描画ごとに呼ばれる
-	void Update()
-	{
 	}
 
 	/// <summary>
@@ -51,101 +48,6 @@ public class BasicMovementController : MonoBehaviour
 	{
 		MoveDistance.y = JumpSpeed;
 		IsAir = true;
-	}
-
-	/// <summary>
-	/// 左右の地形判定 (移動前にチェックし、壁に埋まりそうな場合は調整する)
-	/// </summary>
-	void HitCheckX()
-	{
-		bool IsGoingRight = MoveDistance.x > 0;
-		Ray2D[] Ray = new Ray2D[HorizontalRaycastNumber];
-		float rayDistance = Mathf.Abs(MoveDistance.x);
-		ColliderVertex Vertex = GetColliderVertex();
-		for (int i = 0; i < HorizontalRaycastNumber; i++)
-		{
-			Ray[i].direction = IsGoingRight ? Vector2.right : Vector2.left;
-			// 右方向の移動の場合
-			if (IsGoingRight)
-			{
-				Ray[i].origin = new Vector2(
-					Vertex.TopRight.x,
-					(Vertex.TopRight.y - ColliderSkin) - (BoxCollider2D.size.y - ColliderSkin * 2) / (HorizontalRaycastNumber - 1) * i
-				);
-			}
-			else
-			{
-				Ray[i].origin = new Vector2(
-					Vertex.TopLeft.x,
-					(Vertex.TopLeft.y - ColliderSkin) - (BoxCollider2D.size.y - ColliderSkin * 2) / (HorizontalRaycastNumber - 1) * i
-				);
-
-			}
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
-			if (RaycastHit)
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);
-				// 触れた判定の中でより近いものと接触したことにする
-				if (Mathf.Abs(MoveDistance.x) > Mathf.Abs(RaycastHit.point.x - Ray[i].origin.x))
-				{
-					MoveDistance.x = RaycastHit.point.x - Ray[i].origin.x;
-				}
-			}
-			else
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.blue);
-			}
-		}
-	}
-
-	/// <summary>
-	/// 上下の地形判定 (移動前にチェックし、壁に埋まりそうな場合は調整する)
-	/// </summary>
-	void HitCheckY()
-	{
-		IsAir = true;
-		bool IsGoingDown = MoveDistance.y < 0;
-		Ray2D[] Ray = new Ray2D[VerticalRaycastNumber];
-		float rayDistance = Mathf.Abs(MoveDistance.y);
-		ColliderVertex Vertex = GetColliderVertex();
-		for (int i = 0; i < VerticalRaycastNumber; i++)
-		{
-			Ray[i].direction = IsGoingDown ? Vector2.down : Vector2.up;
-			// 下方向の移動の場合
-			if (IsGoingDown)
-			{
-				Ray[i].origin = new Vector2(
-					(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
-					Vertex.BottomLeft.y
-				);
-			}
-			else
-			{
-				Ray[i].origin = new Vector2(
-					(Vertex.TopLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
-					Vertex.TopLeft.y
-				);
-			}
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
-			if (RaycastHit)
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);
-				// 触れた判定の中でより近いものと接触したことにする
-				if (Mathf.Abs(MoveDistance.y) > Mathf.Abs(RaycastHit.point.y - Ray[i].origin.y))
-				{
-					MoveDistance.y = RaycastHit.point.y - Ray[i].origin.y;
-				}
-				// 下方向の移動だった場合空中フラグをOFF
-				if (IsGoingDown)
-				{
-					IsAir = false;
-				}
-			}
-			else
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.blue);
-			}
-		}
 	}
 
 	/// <summary>
@@ -183,34 +85,15 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void Calc(bool HitCheckFlag, bool AddGravityFlag)
 	{
-		if (MoveDistance.x != 0)
-		{
-			if (HitCheckFlag) { HitCheckX(); }
-			MoveX();
-		}
-		if (MoveDistance.y != 0)
-		{
-			if (HitCheckFlag) { HitCheckY(); }
-			MoveY();
-		}
-		if (HitCheckFlag && !IsAir) { IsAirCheck(); }
+		if (HitCheckFlag) { IsAirCheck(); }
+
+		// 移動量反映
+		//Rigidbody2D.MovePosition(transform.position+(Vector3)MoveDistance);
+		//Rigidbody2D.velocity = MoveDistance*50f/Time.fixedDeltaTime;
+		transform.position += (Vector3)MoveDistance;
+		Rigidbody2D.MovePosition(transform.position);
+		transform.position -= (Vector3)MoveDistance;
 		if (AddGravityFlag && IsAir) { MoveDistance.y += Gravity; }
-	}
-
-	/// <summary>
-	/// X座標の移動量を反映
-	/// </summary>
-	private void MoveX()
-	{
-		transform.SetPosX(transform.position.x + MoveDistance.x);
-	}
-
-	/// <summary>
-	/// Y座標の移動量を反映
-	/// </summary>
-	private void MoveY()
-	{
-		transform.SetPosY(transform.position.y + MoveDistance.y);
 	}
 
 	/// <summary>
