@@ -3,6 +3,7 @@ using System.Collections;
 using System;
 
 [RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(Rigidbody2D))]
 public class BasicMovementController : MonoBehaviour
 {
 	BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
@@ -26,19 +27,28 @@ public class BasicMovementController : MonoBehaviour
 	[HideInInspector]
 	public Vector2 MoveDistance;                // 現在フレームで移動する量
 
-	[Range(2, 20)]
-	public int HorizontalRaycastNumber = 3;     // 地形判定に使用する水平の Raycast の本数
-	[Range(2, 20)]
-	public int VerticalRaycastNumber = 2;       // 地形判定に使用する垂直の Raycast の本数
+	[Range(0.001f, 1.0f)]
+	public float ColliderSkin;                  // ピクセルの縁同士で触れたことにならないための判定の遊び
 
-	private float ColliderSkin = 0.001f;        // ピクセルの縁同士で触れたことにならないための判定の遊び
-
-	// コンストラクタ
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
 	void Start()
 	{
 		Rigidbody2D = GetComponent<Rigidbody2D>();
 		BoxCollider2D = GetComponent<BoxCollider2D>();
 		SetPlatformLayerMask(new string[] { "Platform" });
+	}
+
+	/// <summary>
+	/// 計算処理
+	/// </summary>
+	public void Calc(bool HitCheckFlag, bool AddGravityFlag)
+	{
+		// 移動量反映
+		Rigidbody2D.MovePosition(transform.position + (Vector3)MoveDistance);
+		if (HitCheckFlag) { IsAirCheck(); }
+		if (AddGravityFlag && IsAir) { MoveDistance.y += Gravity; }
 	}
 
 	/// <summary>
@@ -53,47 +63,28 @@ public class BasicMovementController : MonoBehaviour
 	/// <summary>
 	/// 足元に地形があるか判定
 	/// </summary>
-	void IsAirCheck()
+	private void IsAirCheck()
 	{
-		IsAir = true;
-		Ray2D[] Ray = new Ray2D[VerticalRaycastNumber];
-		float rayDistance = 1.0f;
-		ColliderVertex Vertex = GetColliderVertex();
-		for (int i = 0; i < VerticalRaycastNumber; i++)
-		{
-			Ray[i].direction = Vector2.down;
-			Ray[i].origin = new Vector2(
-				(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
-				Vertex.BottomLeft.y
+		// X は ColliderSkin を加算し左右にはみ出さないように計算済み。なので Mathf.Round() してはいけない。
+		// Y は Rigidbody2D の仕様上、地面から 0.015unit 程度(場合による)浮くため、Mathf.Round() してキリのいい数字にしてあげる。
+		Vector2 rayOrigin = new Vector2(
+			BoxCollider2D.transform.position.x + BoxCollider2D.offset.x - BoxCollider2D.size.x / 2 + ColliderSkin,
+			Mathf.Round(BoxCollider2D.transform.position.y) + BoxCollider2D.offset.y - BoxCollider2D.size.y / 2
 			);
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
-			if (RaycastHit)
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);
-				IsAir = false;
-				break;
-			}
-			else
-			{
-				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.blue);
-			}
+		Vector2 rayDirection = Vector2.right;
+		float rayDistance = BoxCollider2D.size.x - ColliderSkin * 2;
+		RaycastHit2D RaycastHit = Physics2D.Raycast(rayOrigin, rayDirection, rayDistance, PlatformLayerMask);
+		if (RaycastHit)
+		{
+			Debug.DrawRay(rayOrigin, rayDirection * rayDistance, Color.red);
+			MoveDistance.y = 0.0f;
+			IsAir = false;
 		}
-	}
-
-	/// <summary>
-	/// 計算処理
-	/// </summary>
-	public void Calc(bool HitCheckFlag, bool AddGravityFlag)
-	{
-		if (HitCheckFlag) { IsAirCheck(); }
-
-		// 移動量反映
-		//Rigidbody2D.MovePosition(transform.position+(Vector3)MoveDistance);
-		//Rigidbody2D.velocity = MoveDistance*50f/Time.fixedDeltaTime;
-		transform.position += (Vector3)MoveDistance;
-		Rigidbody2D.MovePosition(transform.position);
-		transform.position -= (Vector3)MoveDistance;
-		if (AddGravityFlag && IsAir) { MoveDistance.y += Gravity; }
+		else
+		{
+			Debug.DrawRay(rayOrigin, rayDirection * rayDistance, Color.blue);
+			IsAir = true;
+		}
 	}
 
 	/// <summary>
