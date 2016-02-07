@@ -50,7 +50,7 @@ public class PlayerController : MonoBehaviour
 	private void Operation()
 	{
 		// ジャンプ開始
-		if (Input.GetButtonDown("Jump"))
+		if (Input.GetButtonDown("Jump") && !BMController.IsAir)
 		{
 			BMController.Jump(JumpSpeed);
 		}
