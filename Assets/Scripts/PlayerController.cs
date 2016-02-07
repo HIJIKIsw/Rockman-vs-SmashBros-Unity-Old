@@ -3,10 +3,11 @@ using System.Collections;
 using System;
 
 [RequireComponent(typeof(BasicMovementController))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
 	private BasicMovementController BMController;   // BasicMovementController コンポーネント	
-	private BoxCollider2D BoxCollider2D;            // BoxCollider2D コンポーネント
 	private Animator Animator;                      // Animator コンポーネント
 	private SpriteRenderer SpriteRenderer;          // SpriteRenderer コンポーネント
 
@@ -20,7 +21,6 @@ public class PlayerController : MonoBehaviour
 	void Start()
 	{
 		BMController = GetComponent<BasicMovementController>();
-		BoxCollider2D = GetComponent<BoxCollider2D>();
 		Animator = GetComponent<Animator>();
 		SpriteRenderer = GetComponent<SpriteRenderer>();
 

@@ -5,6 +5,7 @@ using System;
 [RequireComponent(typeof(BoxCollider2D))]
 public class BasicMovementController : MonoBehaviour
 {
+
 	BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
 
 	private struct ColliderVertex               // 当たり判定の頂点 構造体
@@ -15,7 +16,7 @@ public class BasicMovementController : MonoBehaviour
 		public Vector2 BottomRight;
 	}
 
-	// Inspector に表示するパラメータ
+	#region Inspector に表示するパラメータ
 	public bool IsHitTerrain = true;            // 地形判定を行うかどうか
 	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
 	[Range(-16.0f, 0.0f)]
@@ -25,24 +26,31 @@ public class BasicMovementController : MonoBehaviour
 	[Range(2, 20)]
 	public int VerticalRaycastNumber = 3;       // 地形判定に使用する垂直の Raycast の本数
 	[Range(0.001f, 1.0f)]
-	public float ColliderSkin = 0.001f;			// ピクセルの縁同士で触れたことにならないための判定の遊び
+	public float ColliderSkin = 0.001f;         // ピクセルの縁同士で触れたことにならないための判定の遊び
+	#endregion
 
-	// Inspector に表示しないパラメータ
+	#region Inspector に表示しないパラメータ
+	[HideInInspector]
+	public Vector2 InternalPosition;            // 内部座標
 	[HideInInspector]
 	public Vector2 MoveDistance;                // 現在フレームで移動する量
 	[HideInInspector]
 	public bool IsAir;                          // 空中にいるかどうか
+	#endregion
 
-
-	// コンストラクタ
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
 	void Start()
 	{
 		BoxCollider2D = GetComponent<BoxCollider2D>();
-	}
 
-	// 描画ごとに呼ばれる
-	void Update()
-	{
+		// 内部座標を初期化
+		InternalPosition = transform.position;
+
+		// 初期位置を整数に制限
+		transform.SetPosX(Mathf.Round(InternalPosition.x));
+		transform.SetPosY(Mathf.Round(InternalPosition.y));
 	}
 
 	/// <summary>
@@ -156,7 +164,7 @@ public class BasicMovementController : MonoBehaviour
 	{
 		IsAir = true;
 		Ray2D[] Ray = new Ray2D[VerticalRaycastNumber];
-		float rayDistance = 1.0f;
+		float rayDistance = 0.5f;
 		ColliderVertex Vertex = GetColliderVertex();
 		for (int i = 0; i < VerticalRaycastNumber; i++)
 		{
@@ -184,6 +192,18 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void Calc()
 	{
+		#region DebugCode: Unity エディター上での動作の場合、内部座標が本座標と異なった場合は取得しなおす
+#if UNITY_EDITOR
+		Vector2 RoundedPos = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+		if( RoundedPos != (Vector2)transform.position)
+		{
+			RoundedPos = new Vector2(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y));
+			InternalPosition = RoundedPos;
+			transform.position = RoundedPos;
+		}
+#endif
+		#endregion
+
 		if (MoveDistance.x != 0.0f)
 		{
 			if (IsHitTerrain) { HitCheckX(); }
@@ -194,7 +214,7 @@ public class BasicMovementController : MonoBehaviour
 			if (IsHitTerrain) { HitCheckY(); }
 			MoveY();
 		}
-		if (IsHitTerrain && !IsAir) { IsAirCheck(); }
+		if (IsHitTerrain) { IsAirCheck(); }
 		if (IsAir) { MoveDistance.y += Gravity; }
 	}
 
@@ -203,7 +223,8 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	private void MoveX()
 	{
-		transform.SetPosX(transform.position.x + MoveDistance.x);
+		InternalPosition.x += MoveDistance.x;
+		transform.SetPosX(Mathf.Round(InternalPosition.x));
 	}
 
 	/// <summary>
@@ -211,7 +232,8 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	private void MoveY()
 	{
-		transform.SetPosY(transform.position.y + MoveDistance.y);
+		InternalPosition.y += MoveDistance.y;
+		transform.SetPosY(Mathf.Round(InternalPosition.y));
 	}
 
 	/// <summary>
