@@ -15,28 +15,29 @@ public class BasicMovementController : MonoBehaviour
 		public Vector2 BottomRight;
 	}
 
-	[HideInInspector]
-	public bool IsAir;                          // 空中にいるかどうか
+	// Inspector に表示するパラメータ
+	public bool IsHitTerrain = true;            // 地形判定を行うかどうか
+	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
 	[Range(-16.0f, 0.0f)]
-	public float Gravity = -0.25f;               // 1フレーム毎にかかる重力
-	[HideInInspector]
-	public int PlatformLayerMask;               // 地形判定用のレイヤーマスク
+	public float Gravity = -0.25f;              // 1フレーム毎にかかる重力
+	[Range(2, 20)]
+	public int HorizontalRaycastNumber = 4;     // 地形判定に使用する水平の Raycast の本数
+	[Range(2, 20)]
+	public int VerticalRaycastNumber = 3;       // 地形判定に使用する垂直の Raycast の本数
+	[Range(0.001f, 1.0f)]
+	public float ColliderSkin = 0.001f;			// ピクセルの縁同士で触れたことにならないための判定の遊び
 
+	// Inspector に表示しないパラメータ
 	[HideInInspector]
 	public Vector2 MoveDistance;                // 現在フレームで移動する量
+	[HideInInspector]
+	public bool IsAir;                          // 空中にいるかどうか
 
-	[Range(2, 20)]
-	public int HorizontalRaycastNumber = 3;     // 地形判定に使用する水平の Raycast の本数
-	[Range(2, 20)]
-	public int VerticalRaycastNumber = 2;       // 地形判定に使用する垂直の Raycast の本数
-
-	private float ColliderSkin = 0.001f;        // ピクセルの縁同士で触れたことにならないための判定の遊び
 
 	// コンストラクタ
 	void Start()
 	{
 		BoxCollider2D = GetComponent<BoxCollider2D>();
-		SetPlatformLayerMask(new string[] { "Platform" });
 	}
 
 	// 描画ごとに呼ばれる
@@ -181,20 +182,20 @@ public class BasicMovementController : MonoBehaviour
 	/// <summary>
 	/// 計算処理
 	/// </summary>
-	public void Calc(bool HitCheckFlag, bool AddGravityFlag)
+	public void Calc()
 	{
 		if (MoveDistance.x != 0.0f)
 		{
-			if (HitCheckFlag) { HitCheckX(); }
+			if (IsHitTerrain) { HitCheckX(); }
 			MoveX();
 		}
 		if (MoveDistance.y != 0.0f)
 		{
-			if (HitCheckFlag) { HitCheckY(); }
+			if (IsHitTerrain) { HitCheckY(); }
 			MoveY();
 		}
-		if (HitCheckFlag && !IsAir) { IsAirCheck(); }
-		if (AddGravityFlag && IsAir) { MoveDistance.y += Gravity; }
+		if (IsHitTerrain && !IsAir) { IsAirCheck(); }
+		if (IsAir) { MoveDistance.y += Gravity; }
 	}
 
 	/// <summary>

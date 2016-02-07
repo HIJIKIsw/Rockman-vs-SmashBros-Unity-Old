@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
 		Operation();
 
 		// 移動量反映
-		BMController.Calc(true, true);
+		BMController.Calc();
 
 		// アニメーション管理
 		AnimationManagement();
