@@ -1,65 +1,88 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
+[RequireComponent(typeof(BasicMovementController))]
 public class PlayerController : MonoBehaviour
 {
-	private float WalkSpeed;                    // 左右キーによる移動の加速度
-	private float WalkSpeedMax;					// 左右キーによる移動の最大速度
+	private BasicMovementController BMController;   // BasicMovementController コンポーネント	
+	private BoxCollider2D BoxCollider2D;            // BoxCollider2D コンポーネント
+	private Animator Animator;                      // Animator コンポーネント
+	private SpriteRenderer SpriteRenderer;          // SpriteRenderer コンポーネント
 
-	private Vector3 MovingDistance;             // 現在のフレームでの移動量
+	private float WalkSpeed;                        // 左右キーによる移動の加速度
+	private float WalkSpeedMax;                     // 左右キーによる移動の最大速度
+	private float JumpSpeed;                        // ジャンプの初速
+	private bool NeedAirCheck;                      // 足元に地形があるか判定する必要があるかどうか
 
-	private Animator Animator;                  // Animator コンポーネント
-	private SpriteRenderer SpriteRenderer;      // SpriteRenderer コンポーネント
-
-	// Use this for initialization
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
 	void Start()
 	{
-		WalkSpeed = 1.25f;
-		WalkSpeedMax = 1.25f;
-		MovingDistance = new Vector3(0, 0);
-
+		BMController = GetComponent<BasicMovementController>();
+		BoxCollider2D = GetComponent<BoxCollider2D>();
 		Animator = GetComponent<Animator>();
 		SpriteRenderer = GetComponent<SpriteRenderer>();
+
+		WalkSpeed = 1.25f;
+		WalkSpeedMax = 1.25f;
+		JumpSpeed = 5.0f;
 	}
 
-	// Update is called once per frame
+	/// <summary>
+	/// 描画毎に呼ばれる
+	/// </summary>
 	void Update()
 	{
-		// 左右移動
-		Walk();
+		// 入力受付
+		Operation();
 
 		// 移動量反映
-		Move();
+		BMController.Calc(NeedAirCheck, true);
+
+		// アニメーション管理
+		AnimationManagement();
 	}
 
-	// 左右移動
-	void Walk()
+	/// <summary>
+	/// 入力受付
+	/// </summary>
+	private void Operation()
 	{
-		// 左または右のキーが入力されている場合
-		if (Input.GetKey(KeyCode.LeftArrow))
+		// ジャンプ開始
+		if (Input.GetButtonDown("Jump") && !BMController.IsAir)
 		{
-			SpriteRenderer.flipX = true;
-			Animator.SetBool("IsWalk", true);
-			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-1.25f, MovingDistance.x -= WalkSpeed));
+			BMController.Jump(JumpSpeed);
+			NeedAirCheck = false;
 		}
-		else if (Input.GetKey(KeyCode.RightArrow))
+		else
 		{
-			SpriteRenderer.flipX = false;
-			Animator.SetBool("IsWalk", true);
-			MovingDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-1.25f, MovingDistance.x += WalkSpeed));
+			NeedAirCheck = true;
 		}
-
-		// 左右のキーが入力されていない場合
-		if (!Input.GetKey(KeyCode.LeftArrow) && !Input.GetKey(KeyCode.RightArrow))
+		// 左右移動
+		float Direction = Input.GetAxis("Horizontal");
+		if (Direction != 0)
 		{
-			Animator.SetBool("IsWalk", false);
-			MovingDistance.x = 0;
+			SpriteRenderer.flipX = Direction < 0;
+			BMController.MoveDistance.x = Mathf.Min(WalkSpeedMax, Mathf.Max(-WalkSpeedMax, BMController.MoveDistance.x += WalkSpeed * Direction));
+		}
+		// 左右キーが入力されていない場合は移動をやめる
+		else
+		{
+			BMController.MoveDistance.x = 0;
 		}
 	}
 
-	// 移動量反映
-	void Move()
+	/// <summary>
+	/// アニメーション管理
+	/// </summary>
+	private void AnimationManagement()
 	{
-		transform.position += MovingDistance;
+		bool IsJumping = BMController.IsAir;
+		bool IsWalking = BMController.MoveDistance.x != 0f ? true : false;
+
+		Animator.SetBool("IsJumping", IsJumping);
+		Animator.SetBool("IsWalking", IsWalking);
 	}
 }
