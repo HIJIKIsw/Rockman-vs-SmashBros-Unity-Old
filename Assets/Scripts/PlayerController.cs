@@ -13,7 +13,6 @@ public class PlayerController : MonoBehaviour
 	private float WalkSpeed;                        // 左右キーによる移動の加速度
 	private float WalkSpeedMax;                     // 左右キーによる移動の最大速度
 	private float JumpSpeed;                        // ジャンプの初速
-	private bool NeedAirCheck;                      // 足元に地形があるか判定する必要があるかどうか
 
 	/// <summary>
 	/// コンストラクタ
@@ -39,7 +38,7 @@ public class PlayerController : MonoBehaviour
 		Operation();
 
 		// 移動量反映
-		BMController.Calc(NeedAirCheck, true);
+		BMController.Calc(true, true);
 
 		// アニメーション管理
 		AnimationManagement();
@@ -51,14 +50,9 @@ public class PlayerController : MonoBehaviour
 	private void Operation()
 	{
 		// ジャンプ開始
-		if (Input.GetButtonDown("Jump") && !BMController.IsAir)
+		if (Input.GetButtonDown("Jump"))
 		{
 			BMController.Jump(JumpSpeed);
-			NeedAirCheck = false;
-		}
-		else
-		{
-			NeedAirCheck = true;
 		}
 		// 左右移動
 		float Direction = Input.GetAxis("Horizontal");
