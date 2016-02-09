@@ -5,7 +5,6 @@ using System;
 [RequireComponent(typeof(BoxCollider2D))]
 public class BasicMovementController : MonoBehaviour
 {
-
 	BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
 
 	private struct ColliderVertex               // 当たり判定の頂点 構造体
@@ -234,6 +233,33 @@ public class BasicMovementController : MonoBehaviour
 	{
 		InternalPosition.y += MoveDistance.y;
 		transform.SetPosY(Mathf.Round(InternalPosition.y));
+	}
+
+	/// <summary>
+	/// 指定した座標へ移動
+	/// </summary>
+	public void SetPosition(Vector2 position)
+	{
+		InternalPosition = position;
+		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+	}
+
+	/// <summary>
+	/// 指定したX座標へ移動
+	/// </summary>
+	public void SetPosX(float posX)
+	{
+		InternalPosition.x = posX;
+		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+	}
+
+	/// <summary>
+	/// 指定したY座標へ移動
+	/// </summary>
+	public void SetPosY(float posY)
+	{
+		InternalPosition.y = posY;
+		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
 	}
 
 	/// <summary>
