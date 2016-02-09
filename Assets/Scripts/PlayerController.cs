@@ -7,7 +7,7 @@ using System;
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
-	private BasicMovementController BMController;   // BasicMovementController コンポーネント	
+	private BasicMovementController BMController;   // BasicMovementController クラス	
 	private Animator Animator;                      // Animator コンポーネント
 	private SpriteRenderer SpriteRenderer;          // SpriteRenderer コンポーネント
 
@@ -15,11 +15,14 @@ public class PlayerController : MonoBehaviour
 	private float WalkSpeedMax;                     // 左右キーによる移動の最大速度
 	private float JumpSpeed;                        // ジャンプの初速
 
+	public bool ControllEnable;                 // PlayerController による操作受付が有効か
+
 	/// <summary>
 	/// コンストラクタ
 	/// </summary>
 	void Start()
 	{
+		ControllEnable = true;
 		BMController = GetComponent<BasicMovementController>();
 		Animator = GetComponent<Animator>();
 		SpriteRenderer = GetComponent<SpriteRenderer>();
@@ -35,7 +38,10 @@ public class PlayerController : MonoBehaviour
 	void Update()
 	{
 		// 入力受付
-		Operation();
+		if (ControllEnable)
+		{
+			Operation();
+		}
 
 		// 移動量反映
 		BMController.Calc();
