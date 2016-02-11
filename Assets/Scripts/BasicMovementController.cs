@@ -160,8 +160,9 @@ public class BasicMovementController : MonoBehaviour
 	{
 		IsAir = true;
 		Ray2D[] Ray = new Ray2D[VerticalRaycastNumber];
-		float rayDistance = 0.5f;
+		float rayDistance = 1.0f;
 		ColliderVertex Vertex = GetColliderVertex();
+		LayerMask layerMask;
 		for (int i = 0; i < VerticalRaycastNumber; i++)
 		{
 			Ray[i].direction = Vector2.down;
@@ -169,7 +170,14 @@ public class BasicMovementController : MonoBehaviour
 				(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 				Vertex.BottomLeft.y
 			);
-			LayerMask layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
+			if (MoveDistance.y > 0.0f)
+			{
+				layerMask = PlatformLayerMask;
+			}
+			else
+			{
+				layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
+			}
 			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, layerMask);
 			if (RaycastHit)
 			{

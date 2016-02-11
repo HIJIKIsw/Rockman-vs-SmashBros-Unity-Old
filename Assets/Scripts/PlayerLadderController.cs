@@ -80,23 +80,21 @@ public class PlayerLadderController : MonoBehaviour
 			BMController.MoveDistance.y = 0.0f;
 			Animator.speed = Mathf.Abs(Axis.y);
 			// はしごを登りかけか調べる
-			IsLadderBend = BendCheck(LadderBendCheck);
+			IsLadderBend = LadderTopsCheck(LadderBendCheck);
 			// 昇降移動
 			BMController.MoveDistance.y = 1.25f * Axis.y;
 			// はしごが掴める範囲から存在しなくなった場合
 			if (GrabCheck(LadderGrabCheck) == null)
 			{
-				BMController.MoveDistance.y = 0.0f;
 				FinishClimbingLadder(LadderFinishClimbingCheck);
 			}
 			// 下が押された、かつ 接地した場合
 			else if (Axis.y < 0.0f && !BMController.IsAir)
 			{
-				BMController.MoveDistance.y = 0.0f;
-				ReleaseLadder();
+				LandingFromLadder(LadderFinishClimbingCheck);
 			}
 			// 上または下が押されていない、かつ ジャンプが押された場合
-			else if (Axis.y == 0.0 && Input.GetButtonDown("Jump"))
+			else if (Axis.y == 0.0f && Input.GetButtonDown("Jump"))
 			{
 				ReleaseLadder();
 			}
@@ -153,7 +151,7 @@ public class PlayerLadderController : MonoBehaviour
 	void GrabLadder(EdgeCollider2D LadderSpine)
 	{
 		IsLadderClimbing = true;
-		IsLadderBend = BendCheck(LadderBendCheck);
+		IsLadderBend = LadderTopsCheck(LadderBendCheck);
 		BMController.MoveDistance.y = 0.0f;
 		BMController.MoveDistance.x = 0.0f;
 		BMController.SetPosX(LadderSpine.points[0].x);
@@ -176,7 +174,7 @@ public class PlayerLadderController : MonoBehaviour
 	}
 
 	/// <summary>
-	/// はしごを登り切る 
+	/// はしごを昇り切る
 	/// </summary>
 	/// このとき、指定した collider にはしごの上辺が触れている場合、その高さにちょうど立つように座標をリストアする。
 	void FinishClimbingLadder(BoxCollider2D collider)
@@ -190,6 +188,29 @@ public class PlayerLadderController : MonoBehaviour
 			EdgeCollider2D LadderTop = (EdgeCollider2D)LadderTopColliders[0];
 			BMController.SetPosY(LadderTop.points[0].y + 16.0f);
 		}
+		BMController.MoveDistance.y = 0.0f;
+		IsLadderClimbing = false;
+		IsLadderBend = false;
+		PlayerController.ControlEnable = true;
+		this.ControlEnable = false;
+	}
+
+	/// <summary>
+	/// はしごを降り切る
+	/// </summary>
+	/// このとき、指定した collider にはしごの下辺が触れている場合、その高さにちょうど立つように座標をリストアする。
+	void LandingFromLadder(BoxCollider2D collider)
+	{
+		ColliderFourSide f = GetColliderFourSide(collider);
+		Vector2 pointA = new Vector2(f.LeftX, f.TopY);
+		Vector2 pointB = new Vector2(f.RightX, f.BottomY);
+		Collider2D[] LadderBottomColliders = new Collider2D[1];
+		if (Physics2D.OverlapAreaNonAlloc(pointA, pointB, LadderBottomColliders, layerMasks.LadderBottoms) > 0)
+		{
+			EdgeCollider2D LadderBottom = (EdgeCollider2D)LadderBottomColliders[0];
+			BMController.SetPosY(LadderBottom.points[0].y + 16.0f);
+		}
+		BMController.MoveDistance.y = 0.0f;
 		IsLadderClimbing = false;
 		IsLadderBend = false;
 		PlayerController.ControlEnable = true;
@@ -199,13 +220,25 @@ public class PlayerLadderController : MonoBehaviour
 	/// <summary>
 	/// 指定した collider にはしごの上辺が触れているかを返す
 	/// </summary>
-	bool BendCheck(BoxCollider2D collider)
+	bool LadderTopsCheck(BoxCollider2D collider)
 	{
 		ColliderFourSide f = GetColliderFourSide(collider);
 		Vector2 pointA = new Vector2(f.LeftX, f.TopY);
 		Vector2 pointB = new Vector2(f.RightX, f.BottomY);
 		Collider2D[] LadderTopColliders = new Collider2D[1];
 		return Physics2D.OverlapAreaNonAlloc(pointA, pointB, LadderTopColliders, layerMasks.LadderTops) > 0;
+	}
+
+	/// <summary>
+	/// 指定した collider にはしごの下辺が触れているかを返す
+	/// </summary>
+	bool LadderBottomsCheck(BoxCollider2D collider)
+	{
+		ColliderFourSide f = GetColliderFourSide(collider);
+		Vector2 pointA = new Vector2(f.LeftX, f.TopY);
+		Vector2 pointB = new Vector2(f.RightX, f.BottomY);
+		Collider2D[] LadderBottomColliders = new Collider2D[1];
+		return Physics2D.OverlapAreaNonAlloc(pointA, pointB, LadderBottomColliders, layerMasks.LadderBottoms) > 0;
 	}
 
 	/// <summary>
