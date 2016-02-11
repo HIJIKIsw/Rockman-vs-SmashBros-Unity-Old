@@ -19,7 +19,7 @@ public class BasicMovementController : MonoBehaviour
 	public bool IsHitTerrain = true;            // 地形判定を行うかどうか
 	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
 	[Tooltip("下からのみすり抜け可能な当たり判定のレイヤーマスク")]
-	public LayerMask OneWayPlatformLayerMask;	// 一方通行(下からのみすり抜け可能)
+	public LayerMask OneWayPlatformLayerMask;   // 一方通行(下からのみすり抜け可能)
 	[Range(-16.0f, 0.0f)]
 	public float Gravity = -0.25f;              // 1フレーム毎にかかる重力
 	[Range(2, 20)]
@@ -32,8 +32,6 @@ public class BasicMovementController : MonoBehaviour
 
 	#region Inspector に表示しないパラメータ
 	[HideInInspector]
-	public Vector2 InternalPosition;            // 内部座標
-	[HideInInspector]
 	public Vector2 MoveDistance;                // 現在フレームで移動する量
 	[HideInInspector]
 	public bool IsAir;                          // 空中にいるかどうか
@@ -45,13 +43,6 @@ public class BasicMovementController : MonoBehaviour
 	void Start()
 	{
 		BoxCollider2D = GetComponent<BoxCollider2D>();
-
-		// 内部座標を初期化
-		InternalPosition = transform.position;
-
-		// 初期位置を整数に制限
-		transform.SetPosX(Mathf.Round(InternalPosition.x));
-		transform.SetPosY(Mathf.Round(InternalPosition.y));
 	}
 
 	/// <summary>
@@ -198,18 +189,6 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void Calc()
 	{
-		#region DebugCode: Unity エディター上での動作の場合、内部座標が本座標と異なった場合は取得しなおす
-#if UNITY_EDITOR
-		Vector2 RoundedPos = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
-		if( RoundedPos != (Vector2)transform.position)
-		{
-			RoundedPos = new Vector2(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y));
-			InternalPosition = RoundedPos;
-			transform.position = RoundedPos;
-		}
-#endif
-		#endregion
-
 		if (MoveDistance.x != 0.0f)
 		{
 			if (IsHitTerrain) { HitCheckX(); }
@@ -229,8 +208,7 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	private void MoveX()
 	{
-		InternalPosition.x += MoveDistance.x;
-		transform.SetPosX(Mathf.Round(InternalPosition.x));
+		transform.SetPosX(transform.position.x + MoveDistance.x);
 	}
 
 	/// <summary>
@@ -238,8 +216,7 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	private void MoveY()
 	{
-		InternalPosition.y += MoveDistance.y;
-		transform.SetPosY(Mathf.Round(InternalPosition.y));
+		transform.SetPosY(transform.position.y + MoveDistance.y);
 	}
 
 	/// <summary>
@@ -247,8 +224,7 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void SetPosition(Vector2 position)
 	{
-		InternalPosition = position;
-		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+		transform.position = position;
 	}
 
 	/// <summary>
@@ -256,8 +232,7 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void SetPosX(float posX)
 	{
-		InternalPosition.x = posX;
-		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+		transform.position = new Vector2(posX, transform.position.y);
 	}
 
 	/// <summary>
@@ -265,8 +240,7 @@ public class BasicMovementController : MonoBehaviour
 	/// </summary>
 	public void SetPosY(float posY)
 	{
-		InternalPosition.y = posY;
-		transform.position = new Vector2(Mathf.Round(InternalPosition.x), Mathf.Round(InternalPosition.y));
+		transform.position = new Vector2(transform.position.x, posY);
 	}
 
 	/// <summary>
