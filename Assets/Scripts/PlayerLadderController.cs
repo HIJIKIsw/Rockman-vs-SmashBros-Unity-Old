@@ -210,7 +210,6 @@ public class PlayerLadderController : MonoBehaviour
 			EdgeCollider2D LadderBottom = (EdgeCollider2D)LadderBottomColliders[0];
 			BMController.SetPosY(LadderBottom.points[0].y + 16.0f);
 		}
-		BMController.MoveDistance.y = 0.0f;
 		IsLadderClimbing = false;
 		IsLadderBend = false;
 		PlayerController.ControlEnable = true;
