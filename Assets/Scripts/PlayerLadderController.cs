@@ -8,9 +8,11 @@ public class PlayerLadderController : MonoBehaviour
 {
 	private PlayerController PlayerController;              // PlayerController クラス
 	private BasicMovementController BMController;           // BasicMovementController クラス
-	private Animator Animator;								// Animator コンポーネント
+	private Animator Animator;                              // Animator コンポーネント
 	private BoxCollider2D LadderGrabCheck;                  // はしごが掴める範囲内にあるか調べる当たり判定
 	private BoxCollider2D LadderDownGrabCheck;              // はしごが足元(立っているマス)の掴める位置にあるか調べる当たり判定
+	private BoxCollider2D LadderBendCheck;                  // はしごを掴んでいるとき、登りかけであるか調べる当たり判定
+	private BoxCollider2D LadderFinishClimbingCheck;        // はしごを登り切ったときに、はしご上辺の座標を取得するための当たり判定
 
 	private struct LayerMasks                               // はしごの各当たり判定のレイヤーマスク 構造体
 	{
@@ -29,10 +31,13 @@ public class PlayerLadderController : MonoBehaviour
 		public float RightX;
 	}
 
-	public bool ControllEnable;                             // PlayerLadderController による操作受付が有効か
+	public bool ControlEnable;                             // PlayerLadderController による操作受付が有効か
 
 	[HideInInspector]
-	public bool IsClimbing;                                 // はしごを掴んでいるかどうか
+	public bool IsLadderClimbing;                           // はしごを掴んでいるかどうか
+
+	[HideInInspector]
+	public bool IsLadderBend;                                       // はしごを登りかけかどうか
 
 	/// <summary>
 	/// コンストラクタ
@@ -50,6 +55,8 @@ public class PlayerLadderController : MonoBehaviour
 
 		LadderGrabCheck = transform.Find("LadderGrabCheck").GetComponent<BoxCollider2D>();
 		LadderDownGrabCheck = transform.Find("LadderDownGrabCheck").GetComponent<BoxCollider2D>();
+		LadderBendCheck = transform.Find("LadderBendCheck").GetComponent<BoxCollider2D>();
+		LadderFinishClimbingCheck = transform.Find("LadderFinishClimbingCheck").GetComponent<BoxCollider2D>();
 	}
 
 	/// <summary>
@@ -67,25 +74,29 @@ public class PlayerLadderController : MonoBehaviour
 	{
 		Vector2 Axis = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
 		// はしごを掴んでいる場合
-		if (IsClimbing)
+		if (IsLadderClimbing)
 		{
 			//TODO: 以下は一時対処。次回のGitHubコミットまでに共通化する
-			//TODO: 掴んだ瞬間のアニメーションがおかしい(一瞬ジャンプが再生される)のを修正する
-			//		これに関しては、アニメーション管理を共通クラス化することで解決する？
 			BMController.MoveDistance.y = 0.0f;
-			Animator.SetBool("IsClimbing", true);
-			// 上または下が押された場合
-			if (Axis.y != 0.0f)
+			Animator.speed = Mathf.Abs(Axis.y);
+			// はしごを登りかけか調べる
+			IsLadderBend = BendCheck(LadderBendCheck);
+			// 昇降移動
+			BMController.MoveDistance.y = 1.25f * Axis.y;
+			// はしごが掴める範囲から存在しなくなった場合
+			if (GrabCheck(LadderGrabCheck) == null)
 			{
-				BMController.MoveDistance.y = 1.25f * Axis.y;
+				BMController.MoveDistance.y = 0.0f;
+				FinishClimbingLadder(LadderFinishClimbingCheck);
 			}
-			// ジャンプが押された場合
-			if (Input.GetButtonDown("Jump"))
+			// 下が押された、かつ 接地した場合
+			else if (Axis.y < 0.0f && !BMController.IsAir)
 			{
+				BMController.MoveDistance.y = 0.0f;
 				ReleaseLadder();
 			}
-			// 接地している場合
-			if (!BMController.IsAir)
+			// 上または下が押されていない、かつ ジャンプが押された場合
+			else if (Axis.y == 0.0 && Input.GetButtonDown("Jump"))
 			{
 				ReleaseLadder();
 			}
@@ -93,12 +104,11 @@ public class PlayerLadderController : MonoBehaviour
 		// はしごを掴んでいない場合
 		else
 		{
-			Animator.SetBool("IsClimbing", false);
-			// 上または下が押された場合
-			if (Axis.y != 0.0f)
+			// 接地していない場合
+			if (BMController.IsAir)
 			{
-				// 接地していない場合
-				if (BMController.IsAir)
+				// 上が押された場合
+				if (Axis.y == 1.0f)
 				{
 					// はしごに重なっている場合
 					EdgeCollider2D LadderSpine = GrabCheck(LadderGrabCheck);
@@ -107,47 +117,49 @@ public class PlayerLadderController : MonoBehaviour
 						GrabLadder(LadderSpine);
 					}
 				}
-				// 接地している場合
-				else
+			}
+			// 接地している場合
+			else
+			{
+				// 上が押された場合
+				if (Axis.y == 1.0f)
 				{
-					// 押されたのが上だった場合
-					if (Axis.y == 1.0f)
+					// はしごに重なっている場合
+					EdgeCollider2D LadderSpine = GrabCheck(LadderGrabCheck);
+					if (LadderSpine != null)
 					{
-						// はしごに重なっている場合
-						EdgeCollider2D LadderSpine = GrabCheck(LadderGrabCheck);
-						if (LadderSpine != null)
-						{
-							GrabLadder(LadderSpine);
-						}
+						GrabLadder(LadderSpine);
 					}
-					// 押されたのが下だった場合
-					else
+				}
+				// 下が押された場合
+				else if(Axis.y == -1.0f)
+				{
+					// 足元にはしごがある場合
+					EdgeCollider2D FootLadderSpine = GrabCheck(LadderDownGrabCheck);
+					if (FootLadderSpine != null)
 					{
-						// 足元にはしごがある場合
-						EdgeCollider2D FootLadderSpine = GrabCheck(LadderDownGrabCheck);
-						if (FootLadderSpine != null)
-						{
-							BMController.SetPosY(transform.position.y - 8.0f);
-							GrabLadder(FootLadderSpine);
-						}
+						BMController.SetPosY(transform.position.y - 8.0f);
+						IsLadderBend = true;
+						GrabLadder(FootLadderSpine);
 					}
 				}
 			}
 		}
 	}
 
-
 	/// <summary>
 	/// はしごに掴まる
 	/// </summary>
 	void GrabLadder(EdgeCollider2D LadderSpine)
 	{
-		IsClimbing = true;
+		IsLadderClimbing = true;
+		IsLadderBend = BendCheck(LadderBendCheck);
+		BMController.MoveDistance.y = 0.0f;
 		BMController.MoveDistance.x = 0.0f;
 		BMController.SetPosX(LadderSpine.points[0].x);
 
-		PlayerController.ControllEnable = false;
-		this.ControllEnable = true;
+		PlayerController.ControlEnable = false;
+		this.ControlEnable = true;
 	}
 
 	/// <summary>
@@ -155,9 +167,45 @@ public class PlayerLadderController : MonoBehaviour
 	/// </summary>
 	void ReleaseLadder()
 	{
-		IsClimbing = false;
-		PlayerController.ControllEnable = true;
-		this.ControllEnable = false;
+		IsLadderClimbing = false;
+		IsLadderBend = false;
+
+		PlayerController.ControlEnable = true;
+		this.ControlEnable = false;
+		Animator.speed = 1.0f;
+	}
+
+	/// <summary>
+	/// はしごを登り切る 
+	/// </summary>
+	/// このとき、指定した collider にはしごの上辺が触れている場合、その高さにちょうど立つように座標をリストアする。
+	void FinishClimbingLadder(BoxCollider2D collider)
+	{
+		ColliderFourSide f = GetColliderFourSide(collider);
+		Vector2 pointA = new Vector2(f.LeftX, f.TopY);
+		Vector2 pointB = new Vector2(f.RightX, f.BottomY);
+		Collider2D[] LadderTopColliders = new Collider2D[1];
+		if (Physics2D.OverlapAreaNonAlloc(pointA, pointB, LadderTopColliders, layerMasks.LadderTops) > 0)
+		{
+			EdgeCollider2D LadderTop = (EdgeCollider2D)LadderTopColliders[0];
+			BMController.SetPosY(LadderTop.points[0].y + 16.0f);
+		}
+		IsLadderClimbing = false;
+		IsLadderBend = false;
+		PlayerController.ControlEnable = true;
+		this.ControlEnable = false;
+	}
+
+	/// <summary>
+	/// 指定した collider にはしごの上辺が触れているかを返す
+	/// </summary>
+	bool BendCheck(BoxCollider2D collider)
+	{
+		ColliderFourSide f = GetColliderFourSide(collider);
+		Vector2 pointA = new Vector2(f.LeftX, f.TopY);
+		Vector2 pointB = new Vector2(f.RightX, f.BottomY);
+		Collider2D[] LadderTopColliders = new Collider2D[1];
+		return Physics2D.OverlapAreaNonAlloc(pointA, pointB, LadderTopColliders, layerMasks.LadderTops) > 0;
 	}
 
 	/// <summary>

@@ -18,6 +18,8 @@ public class BasicMovementController : MonoBehaviour
 	#region Inspector に表示するパラメータ
 	public bool IsHitTerrain = true;            // 地形判定を行うかどうか
 	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
+	[Tooltip("下からのみすり抜け可能な当たり判定のレイヤーマスク")]
+	public LayerMask OneWayPlatformLayerMask;	// 一方通行(下からのみすり抜け可能)
 	[Range(-16.0f, 0.0f)]
 	public float Gravity = -0.25f;              // 1フレーム毎にかかる重力
 	[Range(2, 20)]
@@ -118,23 +120,27 @@ public class BasicMovementController : MonoBehaviour
 		ColliderVertex Vertex = GetColliderVertex();
 		for (int i = 0; i < VerticalRaycastNumber; i++)
 		{
+			LayerMask layerMask;
 			Ray[i].direction = IsGoingDown ? Vector2.down : Vector2.up;
 			// 下方向の移動の場合
 			if (IsGoingDown)
 			{
+				layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
 				Ray[i].origin = new Vector2(
 					(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 					Vertex.BottomLeft.y
 				);
 			}
+			// 上方向の移動の場合
 			else
 			{
+				layerMask = PlatformLayerMask;
 				Ray[i].origin = new Vector2(
 					(Vertex.TopLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 					Vertex.TopLeft.y
 				);
 			}
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
+			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, layerMask);
 			if (RaycastHit)
 			{
 				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);
@@ -172,7 +178,8 @@ public class BasicMovementController : MonoBehaviour
 				(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 				Vertex.BottomLeft.y
 			);
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
+			LayerMask layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
+			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, layerMask);
 			if (RaycastHit)
 			{
 				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);

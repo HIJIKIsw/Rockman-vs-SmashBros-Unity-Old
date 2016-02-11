@@ -7,6 +7,7 @@ using System;
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
+	private PlayerLadderController PLController;    // PlayerLadderController クラス
 	private BasicMovementController BMController;   // BasicMovementController クラス	
 	private Animator Animator;                      // Animator コンポーネント
 	private SpriteRenderer SpriteRenderer;          // SpriteRenderer コンポーネント
@@ -15,14 +16,15 @@ public class PlayerController : MonoBehaviour
 	private float WalkSpeedMax;                     // 左右キーによる移動の最大速度
 	private float JumpSpeed;                        // ジャンプの初速
 
-	public bool ControllEnable;                 // PlayerController による操作受付が有効か
+	public bool ControlEnable;                 // PlayerController による操作受付が有効か
 
 	/// <summary>
 	/// コンストラクタ
 	/// </summary>
 	void Start()
 	{
-		ControllEnable = true;
+		ControlEnable = true;
+		PLController = GetComponent<PlayerLadderController>();
 		BMController = GetComponent<BasicMovementController>();
 		Animator = GetComponent<Animator>();
 		SpriteRenderer = GetComponent<SpriteRenderer>();
@@ -38,7 +40,7 @@ public class PlayerController : MonoBehaviour
 	void Update()
 	{
 		// 入力受付
-		if (ControllEnable)
+		if (ControlEnable)
 		{
 			Operation();
 		}
@@ -79,9 +81,13 @@ public class PlayerController : MonoBehaviour
 	/// </summary>
 	private void AnimationManagement()
 	{
+		bool IsLadderClimbing = PLController.IsLadderClimbing;
+		bool IsLadderBend = PLController.IsLadderBend;
 		bool IsJumping = BMController.IsAir;
 		bool IsWalking = BMController.MoveDistance.x != 0f ? true : false;
 
+		Animator.SetBool("IsLadderClimbing", IsLadderClimbing);
+		Animator.SetBool("IsLadderBend", IsLadderBend);
 		Animator.SetBool("IsJumping", IsJumping);
 		Animator.SetBool("IsWalking", IsWalking);
 	}
