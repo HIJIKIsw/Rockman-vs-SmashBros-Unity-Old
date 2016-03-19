@@ -46,7 +46,7 @@ public class PlayerLadderController : MonoBehaviour
 	{
 		PlayerController = GetComponent<PlayerController>();
 		BMController = GetComponent<BasicMovementController>();
-		Animator = GetComponent<Animator>();
+		Animator = transform.FindChild("Sprite").GetComponent<Animator>();
 
 		layerMasks.Ladders = LayerMask.GetMask(new string[] { "Ladders" });
 		layerMasks.LadderTops = LayerMask.GetMask(new string[] { "LadderTops" });

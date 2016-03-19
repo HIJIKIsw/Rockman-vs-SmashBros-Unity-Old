@@ -3,8 +3,6 @@ using System.Collections;
 using System;
 
 [RequireComponent(typeof(BasicMovementController))]
-[RequireComponent(typeof(Animator))]
-[RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
 	private PlayerLadderController PLController;    // PlayerLadderController クラス
@@ -26,8 +24,8 @@ public class PlayerController : MonoBehaviour
 		ControlEnable = true;
 		PLController = GetComponent<PlayerLadderController>();
 		BMController = GetComponent<BasicMovementController>();
-		Animator = GetComponent<Animator>();
-		SpriteRenderer = GetComponent<SpriteRenderer>();
+		Animator = transform.FindChild("Sprite").GetComponent<Animator>();
+		SpriteRenderer = transform.FindChild("Sprite").GetComponent<SpriteRenderer>();
 
 		WalkSpeed = 1.25f;
 		WalkSpeedMax = 1.25f;
