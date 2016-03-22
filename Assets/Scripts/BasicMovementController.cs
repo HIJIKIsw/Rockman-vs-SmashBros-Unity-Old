@@ -5,16 +5,6 @@ using System;
 [RequireComponent(typeof(BoxCollider2D))]
 public class BasicMovementController : MonoBehaviour
 {
-	BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
-
-	private struct ColliderVertex               // 当たり判定の頂点 構造体
-	{
-		public Vector2 TopLeft;
-		public Vector2 TopRight;
-		public Vector2 BottomLeft;
-		public Vector2 BottomRight;
-	}
-
 	#region Inspector に表示するパラメータ
 	public bool IsHitTerrain = true;            // 地形判定を行うかどうか
 	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
@@ -35,12 +25,26 @@ public class BasicMovementController : MonoBehaviour
 	public Vector2 MoveDistance;                // 現在フレームで移動する量
 	[HideInInspector]
 	public bool IsAir;                          // 空中にいるかどうか
-	#endregion
+    #endregion
 
-	/// <summary>
-	/// コンストラクタ
-	/// </summary>
-	void Start()
+    #region 各コンポーネント
+    BoxCollider2D BoxCollider2D;                // BoxCollider2D コンポーネント
+    #endregion
+
+    #region 構造体や定数
+    private struct ColliderVertex               // 当たり判定の頂点 構造体
+    {
+        public Vector2 TopLeft;
+        public Vector2 TopRight;
+        public Vector2 BottomLeft;
+        public Vector2 BottomRight;
+    }
+    #endregion
+
+    /// <summary>
+    /// コンストラクタ
+    /// </summary>
+    void Start()
 	{
 		BoxCollider2D = GetComponent<BoxCollider2D>();
 	}
