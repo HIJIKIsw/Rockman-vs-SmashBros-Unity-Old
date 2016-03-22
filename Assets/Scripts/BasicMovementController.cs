@@ -10,7 +10,9 @@ public class BasicMovementController : MonoBehaviour
 	public LayerMask PlatformLayerMask;         // 地形判定用のレイヤーマスク
 	[Tooltip("下からのみすり抜け可能な当たり判定のレイヤーマスク")]
 	public LayerMask OneWayPlatformLayerMask;   // 一方通行(下からのみすり抜け可能)
-	[Range(-16.0f, 0.0f)]
+    [Tooltip("坂道地形の当たり判定のレイヤーマスク")]
+    public LayerMask SlopeLayerMask;            // スロープ
+    [Range(-16.0f, 0.0f)]
 	public float Gravity = -0.25f;              // 1フレーム毎にかかる重力
 	[Range(2, 20)]
 	public int HorizontalRaycastNumber = 4;     // 地形判定に使用する水平の Raycast の本数
@@ -67,7 +69,8 @@ public class BasicMovementController : MonoBehaviour
 		Ray2D[] Ray = new Ray2D[HorizontalRaycastNumber];
 		float rayDistance = Mathf.Abs(MoveDistance.x);
 		ColliderVertex Vertex = GetColliderVertex();
-		for (int i = 0; i < HorizontalRaycastNumber; i++)
+        RaycastHit2D RaycastHit;
+        for (int i = 0; i < HorizontalRaycastNumber; i++)
 		{
 			Ray[i].direction = IsGoingRight ? Vector2.right : Vector2.left;
 			// 右方向の移動の場合
@@ -86,7 +89,8 @@ public class BasicMovementController : MonoBehaviour
 				);
 
 			}
-			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
+            // 通常の地形との接触
+			RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, PlatformLayerMask);
 			if (RaycastHit)
 			{
 				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.red);
@@ -100,7 +104,39 @@ public class BasicMovementController : MonoBehaviour
 			{
 				Debug.DrawRay(Ray[i].origin, Ray[i].direction * rayDistance, Color.blue);
 			}
-		}
+            // スロープとの接触
+            RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, SlopeLayerMask);
+            if (RaycastHit)
+            {
+                // 触れた判定の中でより近いものと接触したことにする
+                if (Mathf.Abs(MoveDistance.x) > Mathf.Abs(RaycastHit.point.x - Ray[i].origin.x))
+                {
+                    // スロープを登る
+                    Vector2 origin;
+                    Vector2 direction = Vector2.down;
+                    float distance = 4.0f;
+                    // 右方向の移動の場合
+                    if (IsGoingRight)
+                    {
+                        origin = new Vector2(
+                            Vertex.BottomRight.x + MoveDistance.x,
+                            Vertex.BottomRight.y + distance - 1.0f
+                        );
+                    }
+                    else
+                    {
+                        origin = new Vector2(
+                            Vertex.BottomLeft.x + MoveDistance.x,
+                            Vertex.BottomLeft.y + distance - 1.0f
+                        );
+
+                    }
+                    RaycastHit = Physics2D.Raycast(origin, direction, distance, SlopeLayerMask);
+                    Debug.DrawRay(origin, direction * distance, Color.cyan);
+                    MoveDistance.y = RaycastHit.point.y - Vertex.BottomLeft.y;
+                }
+            }
+        }
 	}
 
 	/// <summary>
@@ -120,7 +156,7 @@ public class BasicMovementController : MonoBehaviour
 			// 下方向の移動の場合
 			if (IsGoingDown)
 			{
-				layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
+				layerMask = PlatformLayerMask + OneWayPlatformLayerMask + SlopeLayerMask;
 				Ray[i].origin = new Vector2(
 					(Vertex.BottomLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 					Vertex.BottomLeft.y
@@ -129,7 +165,7 @@ public class BasicMovementController : MonoBehaviour
 			// 上方向の移動の場合
 			else
 			{
-				layerMask = PlatformLayerMask;
+				layerMask = PlatformLayerMask + SlopeLayerMask;
 				Ray[i].origin = new Vector2(
 					(Vertex.TopLeft.x + ColliderSkin) + (BoxCollider2D.size.x - ColliderSkin * 2) / (VerticalRaycastNumber - 1) * i,
 					Vertex.TopLeft.y
@@ -176,11 +212,11 @@ public class BasicMovementController : MonoBehaviour
 			);
 			if (MoveDistance.y > 0.0f)
 			{
-				layerMask = PlatformLayerMask;
+				layerMask = PlatformLayerMask + SlopeLayerMask;
 			}
 			else
 			{
-				layerMask = PlatformLayerMask + OneWayPlatformLayerMask;
+				layerMask = PlatformLayerMask + OneWayPlatformLayerMask + SlopeLayerMask;
 			}
 			RaycastHit2D RaycastHit = Physics2D.Raycast(Ray[i].origin, Ray[i].direction, rayDistance, layerMask);
 			if (RaycastHit)
@@ -276,7 +312,7 @@ public class BasicMovementController : MonoBehaviour
 		Vertex.BottomLeft.x = BoxCollider2D.transform.position.x + BoxCollider2D.offset.x - BoxCollider2D.size.x / 2;
 		Vertex.BottomLeft.y = BoxCollider2D.transform.position.y + BoxCollider2D.offset.y - BoxCollider2D.size.y / 2;
 		Vertex.BottomRight.x = BoxCollider2D.transform.position.x + BoxCollider2D.offset.x + BoxCollider2D.size.x / 2;
-		Vertex.BottomRight.y = BoxCollider2D.transform.position.x + BoxCollider2D.offset.y - BoxCollider2D.size.y / 2;
+		Vertex.BottomRight.y = BoxCollider2D.transform.position.y + BoxCollider2D.offset.y - BoxCollider2D.size.y / 2;
 		return Vertex;
 	}
 }
