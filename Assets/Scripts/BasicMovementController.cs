@@ -27,6 +27,8 @@ public class BasicMovementController : MonoBehaviour
     public Vector2 MoveDistance;                // 現在フレームで移動する量
     [HideInInspector]
     public bool IsAir;                          // 空中にいるかどうか
+    [HideInInspector]
+    public hitTerrain HitTerrain;              // 現在フレームで地形と衝突した方向
     #endregion
 
     #region 各コンポーネント
@@ -41,6 +43,13 @@ public class BasicMovementController : MonoBehaviour
         public Vector2 BottomLeft;
         public Vector2 BottomRight;
     }
+    public struct hitTerrain                   // そのフレームに地形と衝突した方向 構造体
+    {
+        public bool Top;
+        public bool Bottom;
+        public bool Left;
+        public bool Right;
+    }
     #endregion
 
     /// <summary>
@@ -49,6 +58,10 @@ public class BasicMovementController : MonoBehaviour
     void Start()
     {
         BoxCollider2D = GetComponent<BoxCollider2D>();
+        HitTerrain.Top = false;
+        HitTerrain.Bottom = false;
+        HitTerrain.Left = false;
+        HitTerrain.Right = false;
     }
 
     /// <summary>
@@ -73,6 +86,8 @@ public class BasicMovementController : MonoBehaviour
     /// </summary>
     void HitCheckX()
     {
+        HitTerrain.Left = false;
+        HitTerrain.Right = false;
         ColliderVertex Vertex = GetColliderVertex();
         bool IsGoingRight = MoveDistance.x > 0;
         Ray2D[] Ray = new Ray2D[HorizontalRaycastNumber];
@@ -106,6 +121,15 @@ public class BasicMovementController : MonoBehaviour
                 if (Mathf.Abs(MoveDistance.x) > Mathf.Abs(RaycastHit.point.x - Ray[i].origin.x))
                 {
                     MoveDistance.x = RaycastHit.point.x - Ray[i].origin.x;
+                    // 移動方向に応じて地形判定との衝突フラグをtrueに
+                    if( IsGoingRight )
+                    {
+                        HitTerrain.Right = true;
+                    }
+                    else
+                    {
+                        HitTerrain.Left = true;
+                    }
                 }
             }
             else
@@ -171,6 +195,8 @@ public class BasicMovementController : MonoBehaviour
     void HitCheckY()
     {
         IsAir = true;
+        HitTerrain.Top = false;
+        HitTerrain.Bottom = false;
         bool IsGoingDown = MoveDistance.y < 0;
         Ray2D[] Ray = new Ray2D[VerticalRaycastNumber];
         float rayDistance = Mathf.Abs(MoveDistance.y);
@@ -205,6 +231,15 @@ public class BasicMovementController : MonoBehaviour
                 if (Mathf.Abs(MoveDistance.y) > Mathf.Abs(RaycastHit.point.y - Ray[i].origin.y))
                 {
                     MoveDistance.y = RaycastHit.point.y - Ray[i].origin.y;
+                    // 移動方向に応じて地形判定との衝突フラグをtrueに
+                    if (IsGoingDown)
+                    {
+                        HitTerrain.Bottom = true;
+                    }
+                    else
+                    {
+                        HitTerrain.Top = true;
+                    }
                 }
                 // 下方向の移動だった場合空中フラグをOFF
                 if (IsGoingDown)
