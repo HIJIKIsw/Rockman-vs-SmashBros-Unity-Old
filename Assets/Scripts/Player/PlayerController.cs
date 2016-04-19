@@ -6,7 +6,7 @@ using System;
 public class PlayerController : MonoBehaviour
 {
     #region Inspector に表示するパラメータ
-    // なし
+    public GameObject SlidingEffect;
     #endregion
 
     #region Inspector に表示しないパラメータ
@@ -126,6 +126,8 @@ public class PlayerController : MonoBehaviour
         // スライディング開始
         if (Axis.y == -1.0f && Input.GetButtonDown("Jump") && !BMController.IsAir)
         {
+            Vector2 EffectPos = new Vector2(transform.position.x, transform.position.y - 13.0f);
+            Instantiate(SlidingEffect, EffectPos, Quaternion.identity);
             OperationState = StateName.Sliding;
         }
         else
@@ -199,12 +201,35 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     void SlidingOperation()
     {
-        // 向いている方向に進み続ける
+        // 十字キー入力状態の取得
+        Vector2 Axis = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+
+        // キャラクターの向きを取得
         float direction = SpriteRenderer.flipX ? -1.0f : 1.0f;
-        BMController.MoveDistance.x = SlidingSpeed * direction;
+
+        // 進行方向と反対方向を入力した場合
+        if (direction == -1.0f && Axis.x == 1.0f || direction == 1.0f && Axis.x == -1.0f)
+        {
+            SpriteRenderer.flipX = !SpriteRenderer.flipX;
+            OperationState = StateName.Neutral;
+        }
+
+        // 接地している、かつ 下が押されていない、かつ ジャンプキーが押された場合
+        if (!BMController.IsAir && Axis.y != -1.0f && Input.GetButtonDown("Jump"))
+        {
+            BMController.Jump(JumpSpeed);
+            OperationState = StateName.Jump;
+        }
 
         // 壁に衝突した場合
-        if(BMController.HitTerrain.Left || BMController.HitTerrain.Right)
+        Vector2 rayOrigin = new Vector2(
+            transform.position.x + BoxCollider2D.offset.x + (BoxCollider2D.size.x / 2 * direction),
+            transform.position.y + BoxCollider2D.offset.y);
+        Vector2 rayDirection = new Vector2(direction, 0.0f);
+        float rayDistance = SlidingSpeed;
+        LayerMask rayLayerMask = BMController.PlatformLayerMask;
+        RaycastHit2D hit = Physics2D.Raycast(rayOrigin, rayDirection, rayDistance, rayLayerMask);
+        if (hit)
         {
             OperationState = StateName.Neutral;
         }
@@ -214,6 +239,13 @@ public class PlayerController : MonoBehaviour
         {
             OperationState = StateName.Jump;
         }
+
+        // スライディング状態であれば向いている方向に進み続ける
+        if (OperationState == StateName.Sliding)
+        {
+            BMController.MoveDistance.x = SlidingSpeed * direction;
+        }
+
     }
 
     /// <summary>
