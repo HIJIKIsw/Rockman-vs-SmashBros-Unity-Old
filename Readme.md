@@ -15,6 +15,5 @@
 Unity Version 5.3.4f1
 
 ## 古いリポジトリ
-このプロジェクトは、新しいリポジトリで再構築することになりました。  
+このプロジェクトは、[新しいリポジトリ](https://github.com/HIJIKIsw/Rockman-vs-SmashBros-Unity) で再構築することになりました。  
 そのため、このリポジトリはバックアップ目的で残しているだけで、これ以上のアップデートはありません。  
-このプロジェクトの新しいリポジトリは[こちら](https://github.com/HIJIKIsw/Rockman-vs-SmashBros-Unity)です。
